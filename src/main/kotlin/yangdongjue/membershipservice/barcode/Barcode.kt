@@ -1,11 +1,12 @@
 package yangdongjue.membershipservice.barcode
 
+import jakarta.persistence.Embeddable
 import yangdongjue.membershipservice.barcode.exception.BarcodeException
 
-class Barcode(line: String) {
+@Embeddable
+class Barcode(var line: String) {
     init {
-        if (line.length != 10 || line.any { char -> !char.isDigit() }) {
-            throw BarcodeException("멤버십 바코드는 10자리 숫자여야 합니다. 입력된 문자열 $line")
-        }
+        require(line.length == 10 && line.all(Char::isDigit))
+        { throw BarcodeException("멤버십 바코드는 10자리 숫자여야 합니다. 입력된 문자열 $line") }
     }
 }
