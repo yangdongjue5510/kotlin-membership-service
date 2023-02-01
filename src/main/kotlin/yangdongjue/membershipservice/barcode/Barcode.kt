@@ -1,5 +1,7 @@
 package yangdongjue.membershipservice.barcode
 
+import yangdongjue.membershipservice.barcode.exception.BarcodeException
+
 class Barcode(line: String) {
     init {
         if (line.length != 10 || line.any { char -> !char.isDigit() }) {
