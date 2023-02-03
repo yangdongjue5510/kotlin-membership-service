@@ -57,8 +57,6 @@ internal class BarcodeServiceTest {
             .thenReturn(barcode)
         `when`(barcodeRegistryRepository.findByBarcode(barcode))
             .thenReturn(Optional.of(barcodeRegistry))
-        `when`(barcodeRegistryRepository.save(any()))
-            .thenReturn(barcodeRegistry)
 
         assertThrows<BarcodeException> { barcodeService.createBarcode(userId) }
     }
