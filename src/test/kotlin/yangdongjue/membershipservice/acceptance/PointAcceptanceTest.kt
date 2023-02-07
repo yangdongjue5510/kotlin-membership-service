@@ -21,12 +21,14 @@ import yangdongjue.membershipservice.shop.Shop
 import yangdongjue.membershipservice.shop.ShopRepository
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ShopAcceptanceTest(@LocalServerPort var port:Int) {
+class PointAcceptanceTest(@LocalServerPort var port: Int) {
 
     @Autowired
     lateinit var shopRepository: ShopRepository
+
     @Autowired
     lateinit var barcodeRegistryRepository: BarcodeRegistryRepository
+
     @Autowired
     lateinit var pointRepository: PointRepository
 
@@ -41,10 +43,7 @@ class ShopAcceptanceTest(@LocalServerPort var port:Int) {
     fun saveUp_firstTime() {
         val savedShop = shopRepository.save(Shop(Sector.A))
         barcodeRegistryRepository.save(BarcodeRegistry(Barcode("1234567890"), 1L))
-        val point = RestAssured
-            .given()
-            .post("/point/1234567890?shopId=${savedShop.id}&amount=1000")
-            .then().extract().body().`as`(Point::class.java)
+        val point = callSaveUpAPI(savedShop, 1000)
 
         assertAll(
             Executable { Assertions.assertThat(point.barcode).isEqualTo("1234567890") },
@@ -58,14 +57,9 @@ class ShopAcceptanceTest(@LocalServerPort var port:Int) {
     fun saveUp_secondTime() {
         val savedShop = shopRepository.save(Shop(Sector.A))
         barcodeRegistryRepository.save(BarcodeRegistry(Barcode("1234567890"), 1L))
-        RestAssured
-            .given()
-            .post("/point/1234567890?shopId=${savedShop.id}&amount=1000")
 
-        val point = RestAssured
-            .given()
-            .post("/point/1234567890?shopId=${savedShop.id}&amount=1000")
-            .then().extract().body().`as`(Point::class.java)
+        callSaveUpAPI(savedShop, 1000)
+        val point = callSaveUpAPI(savedShop, 1000)
 
         assertAll(
             Executable { Assertions.assertThat(point.barcode).isEqualTo("1234567890") },
@@ -73,4 +67,10 @@ class ShopAcceptanceTest(@LocalServerPort var port:Int) {
             Executable { Assertions.assertThat(point.amount).isEqualTo(2000L) }
         )
     }
+
+    private fun callSaveUpAPI(savedShop: Shop, amount: Long): Point =
+        RestAssured
+            .given()
+            .post("/point/1234567890?shopId=${savedShop.id}&amount=${amount}")
+            .then().extract().body().`as`(Point::class.java)
 }
