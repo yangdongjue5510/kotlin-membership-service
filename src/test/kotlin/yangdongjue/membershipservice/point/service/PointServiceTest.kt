@@ -68,4 +68,19 @@ internal class PointServiceTest {
 
         assertThat(point.amount).isEqualTo(2000L)
     }
+
+    @Test
+    @DisplayName("기존의 적립된 포인트를 적립한다.")
+    fun consume() {
+        val barcode = "1234567890"
+        willDoNothing().given(barcodeFacade).validateBarcodeIsExists(barcode)
+        `when`(shopFacade.findShopTypeById(1L))
+            .thenReturn("A")
+        `when`(pointRepository.findByBarcodeAndShopSector(barcode, ShopSector.A))
+            .thenReturn(Optional.of(Point(1000L, ShopSector.A, barcode)))
+
+        val point = pointService.consume(1L, barcode, 1)
+
+        assertThat(point.amount).isEqualTo(999L)
+    }
 }

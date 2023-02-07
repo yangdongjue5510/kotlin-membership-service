@@ -7,6 +7,7 @@ import yangdongjue.membershipservice.facade.ShopFacade
 import yangdongjue.membershipservice.point.Point
 import yangdongjue.membershipservice.point.PointRepository
 import yangdongjue.membershipservice.point.ShopSector
+import yangdongjue.membershipservice.point.exception.PointException
 
 @Service
 class PointService(
@@ -21,7 +22,17 @@ class PointService(
         val shopSector = ShopSector.valueOf(shopFacade.findShopTypeById(shopId))
         val point = pointRepository.findByBarcodeAndShopSector(barcode, shopSector)
             .orElseGet { pointRepository.save(Point(0, shopSector, barcode)) }
-        point.amount += amount
+        point.accumulate(amount)
+        return point
+    }
+
+    @Transactional
+    fun consume(shopId: Long, barcode: String, amount: Long): Point {
+        barcodeFacade.validateBarcodeIsExists(barcode)
+        val shopSector = ShopSector.valueOf(shopFacade.findShopTypeById(shopId))
+        val point = pointRepository.findByBarcodeAndShopSector(barcode, shopSector)
+            .orElseThrow { PointException("일치하는 포인트 적립 정보가 없습니다. 상점ID = $shopId, 바코드 = $barcode") }
+        point.consume(amount)
         return point
     }
 }

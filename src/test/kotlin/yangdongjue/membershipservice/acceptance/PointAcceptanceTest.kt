@@ -68,9 +68,31 @@ class PointAcceptanceTest(@LocalServerPort var port: Int) {
         )
     }
 
+    @Test
+    @DisplayName("포인트를 사용한다.")
+    fun consume() {
+        val savedShop = shopRepository.save(Shop(Sector.A))
+        barcodeRegistryRepository.save(BarcodeRegistry(Barcode("1234567890"), 1L))
+
+        callSaveUpAPI(savedShop, 1000)
+        val point = callConsumeAPI(savedShop, 1)
+
+        assertAll(
+            Executable { Assertions.assertThat(point.barcode).isEqualTo("1234567890") },
+            Executable { Assertions.assertThat(point.shopSector).isEqualTo(ShopSector.A) },
+            Executable { Assertions.assertThat(point.amount).isEqualTo(999L) }
+        )
+    }
+
+    private fun callConsumeAPI(savedShop: Shop, amount: Int) =
+        RestAssured
+            .given()
+            .post("/point/1234567890/consumption?shopId=${savedShop.id}&amount=${amount}")
+            .then().extract().body().`as`(Point::class.java)
+
     private fun callSaveUpAPI(savedShop: Shop, amount: Long): Point =
         RestAssured
             .given()
-            .post("/point/1234567890?shopId=${savedShop.id}&amount=${amount}")
+            .post("/point/1234567890/deposit?shopId=${savedShop.id}&amount=${amount}")
             .then().extract().body().`as`(Point::class.java)
 }

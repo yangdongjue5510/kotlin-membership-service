@@ -10,10 +10,21 @@ import yangdongjue.membershipservice.point.service.PointService
 @RestController
 class PointController(val pointService: PointService) {
 
-    @PostMapping("/point/{barcode}")
-    fun saveUp(@PathVariable barcode: String,
-               @RequestParam(required = true) shopId: Long,
-               @RequestParam(required = true) amount: Long ): Point {
+    @PostMapping("/point/{barcode}/deposit")
+    fun saveUp(
+        @PathVariable barcode: String,
+        @RequestParam(required = true) shopId: Long,
+        @RequestParam(required = true) amount: Long
+    ): Point {
         return pointService.saveUp(shopId, barcode, amount)
+    }
+
+    @PostMapping("/point/{barcode}/consumption")
+    fun consume(
+        @PathVariable barcode: String,
+        @RequestParam(required = true) shopId: Long,
+        @RequestParam(required = true) amount: Long
+    ): Point {
+        return pointService.consume(shopId, barcode, amount)
     }
 }
