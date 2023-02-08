@@ -25,7 +25,7 @@ internal class ShopFacadeImplTest {
     @Test
     @DisplayName("저장된 상점의 업종을 조회한다.")
     fun findShopTypeById() {
-        val shop = shopRepository.save(Shop(Sector.A))
+        val shop = shopRepository.save(Shop(Sector.A, "shopA"))
         val shopType = shopFacade.findShopTypeById(shop.id)
         assertThat(shopType).isEqualTo("A")
 

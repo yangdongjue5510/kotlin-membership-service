@@ -16,9 +16,12 @@ import yangdongjue.membershipservice.barcode.BarcodeRegistryRepository
 import yangdongjue.membershipservice.point.Point
 import yangdongjue.membershipservice.point.PointRepository
 import yangdongjue.membershipservice.point.ShopSector
+import yangdongjue.membershipservice.point.TransactionType
+import yangdongjue.membershipservice.point.dto.LogDto
 import yangdongjue.membershipservice.shop.Sector
 import yangdongjue.membershipservice.shop.Shop
 import yangdongjue.membershipservice.shop.ShopRepository
+import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class PointAcceptanceTest(@LocalServerPort var port: Int) {
@@ -41,7 +44,7 @@ class PointAcceptanceTest(@LocalServerPort var port: Int) {
     @Test
     @DisplayName("처음으로 포인트를 적립한다.")
     fun saveUp_firstTime() {
-        val savedShop = shopRepository.save(Shop(Sector.A))
+        val savedShop = shopRepository.save(Shop(Sector.A, "shopA"))
         barcodeRegistryRepository.save(BarcodeRegistry(Barcode("1234567890"), 1L))
         val point = callSaveUpAPI(savedShop, 1000)
 
@@ -55,7 +58,7 @@ class PointAcceptanceTest(@LocalServerPort var port: Int) {
     @Test
     @DisplayName("이미 존재하는 포인트에 추가로 포인트를 적립한다.")
     fun saveUp_secondTime() {
-        val savedShop = shopRepository.save(Shop(Sector.A))
+        val savedShop = shopRepository.save(Shop(Sector.A, "shopA"))
         barcodeRegistryRepository.save(BarcodeRegistry(Barcode("1234567890"), 1L))
 
         callSaveUpAPI(savedShop, 1000)
@@ -71,7 +74,7 @@ class PointAcceptanceTest(@LocalServerPort var port: Int) {
     @Test
     @DisplayName("포인트를 사용한다.")
     fun consume() {
-        val savedShop = shopRepository.save(Shop(Sector.A))
+        val savedShop = shopRepository.save(Shop(Sector.A, "shopA"))
         barcodeRegistryRepository.save(BarcodeRegistry(Barcode("1234567890"), 1L))
 
         callSaveUpAPI(savedShop, 1000)
@@ -83,6 +86,37 @@ class PointAcceptanceTest(@LocalServerPort var port: Int) {
             Executable { Assertions.assertThat(point.amount).isEqualTo(999L) }
         )
     }
+
+    @Test
+    @DisplayName("포인트 내역을 조회한다.")
+    fun findLogsBy() {
+        val savedShop = shopRepository.save(Shop(Sector.A, "shopA"))
+        barcodeRegistryRepository.save(BarcodeRegistry(Barcode("1234567890"), 1L))
+
+        callSaveUpAPI(savedShop, 1000)
+        val from = LocalDateTime.now()
+        callSaveUpAPI(savedShop, 1000)
+        callConsumeAPI(savedShop, 1)
+        val to = LocalDateTime.now()
+
+        val logs = callFindLogs(from, to)
+
+        val depositLog = logs[0]
+        val withdrawalLog = logs[1]
+        assertAll(
+            Executable { Assertions.assertThat(logs.size).isEqualTo(2) },
+            Executable { Assertions.assertThat(depositLog.type).isEqualTo(TransactionType.DEPOSIT) },
+            Executable { Assertions.assertThat(withdrawalLog.type).isEqualTo(TransactionType.WITHDRAW) }
+        )
+    }
+
+    private fun callFindLogs(
+        from: LocalDateTime?,
+        to: LocalDateTime?
+    ): MutableList<LogDto> = RestAssured
+        .given()
+        .get("/point/1234567890?from=${from}&to=${to}")
+        .then().extract().body().jsonPath().getList(".", LogDto::class.java)
 
     private fun callConsumeAPI(savedShop: Shop, amount: Int) =
         RestAssured

@@ -31,6 +31,9 @@ internal class PointServiceTest {
     @Mock
     lateinit var pointRepository: PointRepository
 
+    @Mock
+    lateinit var logService: LogService
+
     @InjectMocks
     lateinit var pointService: PointService
 
